@@ -36,18 +36,18 @@ class Text(origin: String, private val font: Font) {
     val length =
         letters.sumBy { letter ->
             letter.map { row -> row.length }.maxOrNull()!!
-        } + (letters.size - 1) * font.betweenSpace.length /*spaces between letters*/
+        } //+ (letters.size - 1) * font.betweenSpace.length /*spaces between letters*/
 
     fun getPrintableStrings(contentLength: Int): List<String> {
         val summarySpace = contentLength - length
-        val leftSpaceLength = summarySpace / 2 + (summarySpace % 2)
-        val rightSpaceLength = summarySpace / 2
+        val leftSpaceLength = summarySpace / 2
+        val rightSpaceLength = summarySpace / 2 + (summarySpace % 2)
         val leftSpace = " ".repeat(leftSpaceLength)
         val rightSpace = " ".repeat(rightSpaceLength)
 
         return (0 until font.height)
             .map { row ->
-                val s = letters.joinToString(font.betweenSpace) { letter -> letter[row] }
+                val s = letters.joinToString("") { letter -> letter[row] }
                 "$leftSpace$s$rightSpace"
             }
     }
@@ -57,9 +57,23 @@ interface Font {
     val height: Int
     val letters: Map<Char, List<String>>
     val betweenSpace: String
+
+    fun save(filename: String) {
+        File(filename).writeText(
+            buildString {
+                appendLine("$height ${letters.size}")
+                letters.forEach { letter ->
+                    appendLine("${letter.key} ${letter.value.first().length}")
+                    for (s in letter.value) {
+                        appendLine(s)
+                    }
+                }
+            }
+        )
+    }
 }
 
-class MediumFont : Font {
+class MediumFont1 : Font {
     override val height: Int = 3
 
     override val betweenSpace: String = " "
@@ -91,12 +105,13 @@ class MediumFont : Font {
         ('x' to listOf("_  _", " \\/ ", "_/\\_")),
         ('y' to listOf("_   _", " \\_/ ", "  |  ")),
         ('z' to listOf("___ ", "  / ", " /__"))
-    ).let { it + it.mapKeys { entry -> entry.key.toUpperCase() } } +
-        mapOf((' ' to listOf("    ", "    ", "    ")))
+    )
+        .mapValues { it.value.map { "$it " } }
+        .let { it + it.mapKeys { entry -> entry.key.toUpperCase() } }
 }
 
 
-class RomanFont(filename: String = "/Users/olegivo/Downloads/Learn/roman.txt") : Font {
+open class ExternalFont(filename: String) : Font {
     override val height: Int
     override val letters: Map<Char, List<String>>
     override val betweenSpace: String = ""
@@ -114,12 +129,16 @@ class RomanFont(filename: String = "/Users/olegivo/Downloads/Learn/roman.txt") :
                 }
                 .associate { it }
 
-            this@RomanFont.height = height
-            this@RomanFont.letters =
+            this@ExternalFont.height = height
+            this@ExternalFont.letters =
                 letters + mapOf(' ' to letters['a']!!.map { String(it.map { ' ' }.toCharArray()) })
         }
     }
 }
+
+//
+class RomanFont : ExternalFont("/Users/olegivo/Downloads/Learn/roman.txt")
+class MediumFont : ExternalFont("/Users/olegivo/Downloads/Learn/medium.txt")
 
 /*
 origin:
